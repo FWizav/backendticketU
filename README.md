@@ -608,69 +608,7 @@ Antes de decir que un módulo está integrado, revisa:
 
 ---
 
-# 12. Inconsistencias detectadas con el repo actual del front
 
-Al revisar el README y los archivos actuales de `FWizav/FrontendTitec`, la propuesta de este repo **sí coincide** con los 9 prefijos que usa el front (`/api/auth`, `/api/catalogo`, `/api/entradas`, `/api/pagos`, `/api/checkin`, `/api/resenas`, `/api/organizador`, `/api/notificaciones`, `/api/promociones`) y mantiene la red externa `plataforma-eventos-net`.
-
-Sin embargo, hay dos detalles del front que conviene corregir/definir explícitamente:
-
-### 12.1 El README del front menciona `.env.example`, pero actualmente no está en la raíz
-
-El README indica:
-
-```bash
-cp .env.example .env.local
-```
-
-pero el archivo `.env.example` no aparece actualmente en el repositorio. Conviene agregarlo, por ejemplo:
-
-```env
-NEXT_PUBLIC_GATEWAY_URL=http://localhost:8080
-```
-
-### 12.2 `NEXT_PUBLIC_GATEWAY_URL=http://gateway:8080` no sirve para fetch ejecutado en el navegador
-
-El README del front sugiere usar el nombre Docker del Gateway (`http://gateway:8080`) cuando el front también corre en Docker. Eso solo es resoluble **desde otros contenedores**. Una llamada `fetch` de un componente cliente se ejecuta en el navegador del usuario, y el navegador normalmente no conoce el DNS interno de Docker `gateway`.
-
-Con el patrón actual `NEXT_PUBLIC_*`, la opción simple para desarrollo en una sola máquina es mantener:
-
-```env
-NEXT_PUBLIC_GATEWAY_URL=http://localhost:8080
-```
-
-porque el puerto `8080` del Gateway se publica al host. Para un despliegue real, debería usarse una URL pública/reachable del Gateway, por ejemplo `https://api.ticketu...`, o agregarse un proxy server-side en Next.js. No conviene depender del nombre interno `gateway` para código que puede ejecutarse en el navegador.
-
-### 12.3 El `docker-compose.yml` del front define `NEXT_PUBLIC_GATEWAY_URL` en runtime, pero el Dockerfile hace `next build` antes
-
-El Dockerfile actual del front ejecuta `npm run build` durante la construcción de la imagen, mientras que el `docker-compose.yml` entrega `NEXT_PUBLIC_GATEWAY_URL` recién al arrancar el contenedor. En Next.js, las variables `NEXT_PUBLIC_*` usadas por el navegador se incorporan al bundle durante `next build`, por lo que cambiar solo el `environment:` de runtime no cambia el valor ya compilado.
-
-Para el esquema actual, el front debería recibir la URL **durante el build**. Un ajuste simple sería:
-
-```dockerfile
-# Dockerfile del front, etapa builder
-ARG NEXT_PUBLIC_GATEWAY_URL=http://localhost:8080
-ENV NEXT_PUBLIC_GATEWAY_URL=$NEXT_PUBLIC_GATEWAY_URL
-RUN npm run build
-```
-
-Y en el `docker-compose.yml` del front:
-
-```yaml
-services:
-  front:
-    build:
-      context: .
-      args:
-        NEXT_PUBLIC_GATEWAY_URL: ${NEXT_PUBLIC_GATEWAY_URL:-http://localhost:8080}
-```
-
-El valor pasado al build debe seguir siendo una URL que el **navegador** pueda alcanzar; para desarrollo local, `http://localhost:8080` es coherente con el Gateway de este repo.
-
-### 12.4 Una línea del README del front todavía habla de “URLs de los 9 microservicios”
-
-En la descripción corta de `src/lib/env.ts`, el README dice que ahí están las “URLs de los 9 microservicios, centralizadas”. Eso contradice la sección 7 y el archivo real `src/lib/env.ts`, que correctamente contienen **una sola** `GATEWAY_URL`. Conviene cambiar esa línea para evitar que un grupo vuelva a introducir URLs directas a microservicios en el front.
-
----
 
 ## 13. Resumen de contratos de infraestructura
 
