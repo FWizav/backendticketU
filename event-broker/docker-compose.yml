@@ -1,0 +1,29 @@
+services:
+  rabbitmq:
+    build: .
+    container_name: ticketu-rabbitmq
+    hostname: ticketu-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
+    ports:
+      - "5672:5672"   # AMQP: lo usan los microservicios
+      - "15672:15672" # Panel web de administración
+    volumes:
+      - ticketu-rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - plataforma-eventos-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ticketu-rabbitmq-data:
+
+networks:
+  plataforma-eventos-net:
+    external: true

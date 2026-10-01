@@ -1,0 +1,18 @@
+{
+  "name": "ticketu-event-broker-examples",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ejemplos de publicación y consumo de eventos RabbitMQ para TicketU",
+  "scripts": {
+    "publisher": "node src/publisher.js",
+    "consumer": "node src/consumer.js",
+    "check": "node --check src/publisher.js && node --check src/consumer.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.5",
+    "dotenv": "^16.4.7"
+  }
+}
